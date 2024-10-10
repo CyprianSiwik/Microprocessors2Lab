@@ -30,6 +30,8 @@ const int yellowOn = 3;
 bool durationSet = false;
 bool lightRunning = false;
 
+enum{}
+
 void setup() {
 
   pinMode(redLED, OUTPUT);
