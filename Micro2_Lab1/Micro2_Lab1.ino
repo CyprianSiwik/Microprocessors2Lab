@@ -10,10 +10,10 @@ const int greenLED = 10;
 const byte ROWS = 4; // number of rows
 const byte COLS = 4; // number of columns
 char keys[ROWS][COLS] = {
-{'1','2','3', 'A'},
-{'4','5','6', 'B'},
-{'7','8','9', 'C'},
-{'*','0','#', 'D'}
+  {'1','2','3', 'A'},
+  {'4','5','6', 'B'},
+  {'7','8','9', 'C'},
+  {'*','0','#', 'D'}
 };
 
 byte rowPins[ROWS] = {9, 8, 7, 6};
@@ -35,6 +35,23 @@ void setup() {
   pinMode(greenLED, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
   systemStartup();
+
+  //Setup Timers
+  cli();//stop interrupts
+  //set timer1 interrupt at 1Hz
+  TCCR1A = 0;// set entire TCCR1A register to 0
+  TCCR1B = 0;// same for TCCR1B
+  TCNT1  = 0;//initialize counter value to 0
+  // set compare match register for 1hz increments
+  OCR1A = 15624;// = (16*10^6) / (1*1024) - 1 (must be <65536)
+  // turn on CTC mode
+  TCCR1B |= (1 << WGM12);
+  // Set CS12 and CS10 bits for 1024 prescaler
+  TCCR1B |= (1 << CS12) | (1 << CS10);  
+  // enable timer compare interrupt
+  TIMSK1 |= (1 << OCIE1A);
+
+  sei();//allow interrupts
 
 }
 
@@ -64,6 +81,59 @@ void trafficSignal() {
   //TODO: Implement this function
 }
 
+void trafficSignalState() {
+  //TODO: Implement this function
+}
+
 void keypadControl() {
   //TODO: Implement this function
+  char key = keypad.getKey();
+  static String inputString = "";
+  static bool redTimeSet = false;
+
+  if (key) {
+    Serial.print("Key pressed: ");
+    Serial.println(key);
+
+    switch (key) {
+      case '#':
+        if (!redTimeSet) {
+          redDuration = inputString.toInt();
+          redTimeSet = true;
+          Serial.print("Red light duration set to: ");
+          Serial.println(redDuration);
+        } else {
+          greenDuration = inputString.toInt();
+          durationsSet = true;
+          Serial.print("Green light duration set to: ");
+          Serial.println(greenDuration);
+        }
+        inputString = "";  // Reset the input string for the next input
+        break;
+
+      case 'A':  // Ignore 'A' for setting Red light
+        Serial.println("Set Red light duration:");
+        inputString = "";  // Reset input string
+        break;
+
+      case 'B':  // Ignore 'B' for setting Green light
+        Serial.println("Set Green light duration:");
+        inputString = "";  // Reset input string
+        break;
+
+      case '*':  // Start the operation when '*' is pressed
+        systemRunning = true;
+        Serial.println("Starting traffic light operation.");
+        break;
+
+      default:
+        // Append numeric key to the input string
+        if (isDigit(key)) {
+          inputString += key;
+          Serial.print("Current input: ");
+          Serial.println(inputString);
+        }
+        break;
+    }
+  }
 }
