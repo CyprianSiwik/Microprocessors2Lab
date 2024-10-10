@@ -106,6 +106,30 @@ void trafficSignalState() {
   //TODO: Implement this function
 }
 
+void buttonDebounce() {
+  // Handle button debouncing and state toggle in loop()
+  int currentButtonState = digitalRead(buttonPin);
+
+  // Compare current button state to previous state
+  if (currentButtonState != lastButtonState) {
+    count = 0; // Reset the count if there's a change in state
+  } else {
+    count++;
+  }
+
+  // Consider the button pressed only if it's stable for multiple iterations
+  if (count > 5) {  // Adjustable: Number of iterations for debouncing
+    if (buttonState != currentButtonState) {
+      buttonState = currentButtonState;
+    }
+  }
+
+  // Update the last button state for the next loop iteration
+  lastButtonState = currentButtonState;
+
+  // Check the keypad state
+  char key = keypad.getKey();
+}
 
 ISR(TIMER1_COMPA_vect) {
   //TODO: Implement this function
@@ -162,29 +186,4 @@ void loop() {
   char key = keypad.getKey();
   
 
-}
-
-void buttonDebounce() {
-  // Handle button debouncing and state toggle in loop()
-  int currentButtonState = digitalRead(buttonPin);
-
-  // Compare current button state to previous state
-  if (currentButtonState != lastButtonState) {
-    count = 0; // Reset the count if there's a change in state
-  } else {
-    count++;
-  }
-
-  // Consider the button pressed only if it's stable for multiple iterations
-  if (count > 5) {  // Adjustable: Number of iterations for debouncing
-    if (buttonState != currentButtonState) {
-      buttonState = currentButtonState;
-    }
-  }
-
-  // Update the last button state for the next loop iteration
-  lastButtonState = currentButtonState;
-
-  // Check the keypad state
-  char key = keypad.getKey();
 }
