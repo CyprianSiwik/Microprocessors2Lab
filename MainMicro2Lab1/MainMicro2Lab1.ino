@@ -34,6 +34,14 @@ byte rowPins[ROWS] = {9, 8, 7, 6};
 byte colPins[COLS] = {5, 4, 3, 2}; 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
+// Variables for Button
+const int buttonPin = 2; // Pin where the button is connected
+int buttonState = HIGH;  // Current state of the button
+int lastButtonState = HIGH;  // Previous state of the button
+bool ledState = false;   // Tracks the LED state
+int count = 0;           // Counts stable states
+bool manualControl = false; // Flag to check if manual control is active
+
 //LED Controls and Other Variables
 const int redOn = 10;
 const int greenOn = 10;
@@ -51,6 +59,7 @@ void setup() {
   pinMode(yellowLED, OUTPUT);
   pinMode(greenLED, OUTPUT);
   pinMode(buzzerPin, OUTPUT);
+
   systemStartup();
 
   //Setup Timers
@@ -149,8 +158,33 @@ ISR(TIMER1_COMPA_vect) {
 
 void loop() {
   // put your main code here, to run repeatedly:
+  buttonDebounce();
   char key = keypad.getKey();
   
 
 }
 
+void buttonDebounce() {
+  // Handle button debouncing and state toggle in loop()
+  int currentButtonState = digitalRead(buttonPin);
+
+  // Compare current button state to previous state
+  if (currentButtonState != lastButtonState) {
+    count = 0; // Reset the count if there's a change in state
+  } else {
+    count++;
+  }
+
+  // Consider the button pressed only if it's stable for multiple iterations
+  if (count > 5) {  // Adjustable: Number of iterations for debouncing
+    if (buttonState != currentButtonState) {
+      buttonState = currentButtonState;
+    }
+  }
+
+  // Update the last button state for the next loop iteration
+  lastButtonState = currentButtonState;
+
+  // Check the keypad state
+  char key = keypad.getKey();
+}
