@@ -37,6 +37,9 @@ const int redOn = 10;
 const int greenOn = 10;
 const int yellowOn = 3;
 
+enum{Initial, KeypadA, KeypadB, RedIN, GreenIN, RedSolid, RedFlickBuzz, GreenSolid, GreenFlickBuzz, YellowBuzz}
+unsigned char state = Initial; 
+
 bool durationSet = false;
 bool lightRunning = false;
 
@@ -67,11 +70,6 @@ void setup() {
 
 }
 
-void loop() {
-  // put your main code here, to run repeatedly:
-
-}
-
 //Flashes red LED on startup
 void systemStartup() {
   //TODO: Change function to non-blocking
@@ -99,57 +97,48 @@ void trafficSignalState() {
 
 void keypadControl() {
   //TODO: Implement this function
-<<<<<<< HEAD:Micro2_Lab1/Micro2_Lab1.ino
   char key = keypad.getKey();
-  static String inputString = "";
-  static bool redTimeSet = false;
 
-  if (key) {
-    Serial.print("Key pressed: ");
-    Serial.println(key);
+  switch(state){
+    case Initial:
+      Intialblink = true;
+      
+      break;
+    case KeypadA:
 
-    switch (key) {
-      case '#':
-        if (!redTimeSet) {
-          redDuration = inputString.toInt();
-          redTimeSet = true;
-          Serial.print("Red light duration set to: ");
-          Serial.println(redDuration);
-        } else {
-          greenDuration = inputString.toInt();
-          durationsSet = true;
-          Serial.print("Green light duration set to: ");
-          Serial.println(greenDuration);
-        }
-        inputString = "";  // Reset the input string for the next input
-        break;
+      break;
+    case KeypadB:
+      
+      break;
+    case RedIN:
+      
+      break;
+    case GreenIN:
 
-      case 'A':  // Ignore 'A' for setting Red light
-        Serial.println("Set Red light duration:");
-        inputString = "";  // Reset input string
-        break;
+      break;
+    case RedSolid:
 
-      case 'B':  // Ignore 'B' for setting Green light
-        Serial.println("Set Green light duration:");
-        inputString = "";  // Reset input string
-        break;
+      break;
+    case RedFlickBuzz:
 
-      case '*':  // Start the operation when '*' is pressed
-        systemRunning = true;
-        Serial.println("Starting traffic light operation.");
-        break;
+      break;
+    case GreenSolid:
 
-      default:
-        // Append numeric key to the input string
-        if (isDigit(key)) {
-          inputString += key;
-          Serial.print("Current input: ");
-          Serial.println(inputString);
-        }
-        break;
-    }
+      break;
+    case GreenFlickBuzz:
+
+      break;
+    case YellowBuzz;
+
+      break;
   }
+
 }
-=======
+
+void loop() {
+  // put your main code here, to run repeatedly:
+
+  
+
 }
->>>>>>> 9165a863fa1af763ea95cc91789c1c0d394a1311:Micro2_Lab1/MainMicro2Lab1.ino
+
