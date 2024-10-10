@@ -18,6 +18,8 @@ const int redLED = 12;
 const int yellowLED = 11;
 const int greenLED = 10;
 
+boolean toggle1 = 0;
+
 //Variables for Keypad
 const byte ROWS = 4; // number of rows
 const byte COLS = 4; // number of columns
@@ -95,17 +97,27 @@ void trafficSignalState() {
   //TODO: Implement this function
 }
 
-void keypadControl() {
+
+ISR(TIMER1_COMPA_vect) {
   //TODO: Implement this function
   char key = keypad.getKey();
 
   switch(state){
     case Initial:
-      Intialblink = true;
-      
+      if (toggle1){
+        digitalWrite(13,HIGH);
+        toggle1 = 0;
+      }
+      else{
+        digitalWrite(13,LOW);
+        toggle1 = 1;
+      }
+
+      state = KeypadA;
+
       break;
     case KeypadA:
-
+      Serial.println("KeyapadA now");
       break;
     case KeypadB:
       
@@ -137,7 +149,7 @@ void keypadControl() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-
+  char key = keypad.getKey();
   
 
 }
