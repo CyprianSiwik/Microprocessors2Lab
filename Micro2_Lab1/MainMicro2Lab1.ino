@@ -87,6 +87,7 @@ void trafficSignalState() {
 
 void keypadControl() {
   //TODO: Implement this function
+<<<<<<< HEAD:Micro2_Lab1/Micro2_Lab1.ino
   char key = keypad.getKey();
   static String inputString = "";
   static bool redTimeSet = false;
@@ -137,3 +138,6 @@ void keypadControl() {
     }
   }
 }
+=======
+}
+>>>>>>> 9165a863fa1af763ea95cc91789c1c0d394a1311:Micro2_Lab1/MainMicro2Lab1.ino
