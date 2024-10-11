@@ -89,7 +89,7 @@ void setup() {
   // set compare match register for 1hz increments
   OCR1A = 15624;// = (16*10^6) / (1*1024) - 1 (must be <65536)
 
-  OCR1B = 31248; //setting Timer1B to be 2 hz
+  OCR1B = 7812; //setting Timer1B to be 2 hz
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS12 and CS10 bits for 1024 prescaler
@@ -112,7 +112,7 @@ ISR(TIMER1_COMPA_vect) {
 ISR(TIMER1_COMPB_vect){
 
   timer1_compb_enable = true;
-  Serial.println("Timer B");
+  //Serial.println("Timer B");
 
 }
 
@@ -237,7 +237,8 @@ void loop() {
           timer1_compa_enable = false;
           TIMSK1 &= ~(1 << OCIE1A);  //Disables 1 sec timer so that it doesnt interrupt half second timer
           TIMSK1 |= (1 << OCIE1B);  //Enables 0.5 sec timer so that the 0.5 sec light blink can run
-          Serial.println("Out");
+          Serial.println("disabled OCIEA enabled OCIEB");
+          Serial.println(OCR1B);
         }
         break;
 
