@@ -36,6 +36,14 @@ byte rowPins[ROWS] = {9, 8, 7, 6};
 byte colPins[COLS] = {5, 4, 3, 2}; 
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
+// Variables for Button
+const int buttonPin = 2; // Pin where the button is connected
+int buttonState = HIGH;  // Current state of the button
+int lastButtonState = HIGH;  // Previous state of the button
+bool ledState = false;   // Tracks the LED state
+int count = 0;           // Counts stable states
+bool manualControl = false; // Flag to check if manual control is active
+
 //LED Controls and Other Variables
 const int redOn = 10;
 const int greenOn = 10;
@@ -87,7 +95,6 @@ void setup() {
 
   sei();//allow interrupts
 }
-
 
 
 ISR(TIMER1_COMPA_vect) {
