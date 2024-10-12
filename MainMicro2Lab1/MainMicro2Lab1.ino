@@ -173,11 +173,11 @@ void loop() {
         while(true){
           char checkKey = keypad.getKey();
           if (checkKey == '#'){
-            if(!redSet && !arrivedAtCompleted){
-              state = GreenIN;
-            }
-            else if(!redSet){
+            if(greenTime != NULL){
               state = userInputComplete;
+            }
+            else if(!redSet && !arrivedAtCompleted){
+              state = GreenIN;
             }
             else{
               state = RedSolid;
@@ -207,7 +207,10 @@ void loop() {
         while(true){
           char checkKey = keypad.getKey();
           if (checkKey == '#'){
-            if(!greenSet){
+            if (redTime == NULL){
+              state = "";
+            }
+            else if(!greenSet){
               state = userInputComplete;
             }
             else{
