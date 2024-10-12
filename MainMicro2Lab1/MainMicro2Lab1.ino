@@ -51,12 +51,9 @@ const int redOn = 10;
 const int greenOn = 10;
 const int yellowOn = 3;
 
-enum{Initial, KeypadA, KeypadB, RedIN, GreenIN, EndKeypad, RedSolid, RedFlickBuzz, GreenSolid, GreenFlickBuzz, YellowBuzz};
+enum{Initial, RedIN, GreenIN, userInputComplete, RedSolid, RedFlickBuzz, GreenSolid, GreenFlickBuzz, YellowBuzz};
 unsigned char state = Initial; 
 unsigned char key;
-
-String redTimeString = "";
-String greenTimeString = "";
 
 unsigned int redTime;
 unsigned int greenTime;
@@ -67,8 +64,9 @@ bool FlickerFlag = false;
 
 volatile bool timer1_compa_enable;
 volatile bool timer1_compb_enable;
-volatile bool redSet;
-volatile bool greenSet;
+volatile bool redSet = false;
+volatile bool greenSet = false;
+volatile bool arrivedAtCompleted = false;
 
 void setup() {
 
@@ -88,52 +86,53 @@ void setup() {
   TCNT1  = 0;//initialize counter value to 0
   // set compare match register for 1hz increments
   OCR1A = 15624;// = (16*10^6) / (1*1024) - 1 (must be <65536)
-
-  OCR1B = 7812; //setting Timer1B to be 2 hz
   // turn on CTC mode
   TCCR1B |= (1 << WGM12);
   // Set CS12 and CS10 bits for 1024 prescaler
   TCCR1B |= (1 << CS12) | (1 << CS10);  
   // enable timer compare interrupt
   TIMSK1 |= (1 << OCIE1A);
-  TIMSK1 &= ~(1 << OCIE1B);
+  TIMSK1 &= ~(1 << OCIE1B);  //disables the 0.5s timer
 
-  sei();//allow interrupts
+  sei();//allow global interrupts
 }
 
 
 
 ISR(TIMER1_COMPA_vect) {
-  //TODO: Implement this function
   timer1_compa_enable = true;
 
 }
 
 ISR(TIMER1_COMPB_vect){
-
   timer1_compb_enable = true;
-  //Serial.println("Timer B");
 
 }
 
 int getUserInput(){
-  String stringtemp;
-  
-  for (int i = 0; i <= 1; i++){
-    while(true){
-      char Tempkey = keypad.getKey();
+  while(true){
+    String stringtemp;
+    
+    for (int i = 0; i <= 1; i++){
+      while(true){
+        char Tempkey = keypad.getKey();
 
-      if (Tempkey <= '9' && Tempkey >= '0'){
-        stringtemp += Tempkey;
+        if (Tempkey <= '9' && Tempkey >= '0'){
+          stringtemp += Tempkey;
 
-        Tempkey = "";
-        Serial.println("out");
-        break;
+          Tempkey = "";
+          Serial.println("input: " + stringtemp);
+          break;
+        }
       }
     }
+      if(stringtemp.toInt() >= 10 && stringtemp.toInt() <= 99){
+        return stringtemp.toInt();
+      }
+      else{
+        Serial.println("inputed number was too small or large (range is 10 - 99)");
+      }
   }
-  return stringtemp.toInt();
-
 }
 
 void loop() {
@@ -141,11 +140,17 @@ void loop() {
   char StateKey = keypad.getKey();
   if (StateKey == 'A'){
     state = RedIN;
-    redSet = false;
+    digitalWrite(redLED, LOW);
+    digitalWrite(greenLED, LOW);
+    digitalWrite(yellowLED, LOW);
+    digitalWrite(buzzerPin, LOW);
   }
-  if(StateKey == 'B'){
+  else if(StateKey == 'B'){
     state = GreenIN;
-    greenSet = false;
+    digitalWrite(redLED, LOW);
+    digitalWrite(greenLED, LOW);
+    digitalWrite(yellowLED, LOW);
+    digitalWrite(buzzerPin, LOW);
   }
   
   if(timer1_compa_enable) {
@@ -161,11 +166,10 @@ void loop() {
         else{
           digitalWrite(redLED,LOW);
           toggle1 = 1;
-          state = KeypadA;
+          state = RedIN;
           Serial.println("OFF");
           Serial.println("completed Initial");
         }
-        
         
         break;
 
@@ -182,9 +186,17 @@ void loop() {
 
         while(true){
           char checkKey = keypad.getKey();
-          if (checkKey == '#' && !redSet){
-            state = GreenIN;
-            redSet = true;
+          if (checkKey == '#'){
+            if(!redSet && !arrivedAtCompleted){
+              state = GreenIN;
+            }
+            else if(!redSet){
+              state = userInputComplete;
+            }
+            else{
+              state = RedSolid;
+              TempTime = 0;
+            }
             break;
           } 
           else if(checkKey == 'A'){
@@ -208,17 +220,48 @@ void loop() {
 
         while(true){
           char checkKey = keypad.getKey();
-          if (checkKey == '#' && !greenSet){
-            state = RedSolid;
-            greenSet = true;
+          if (checkKey == '#'){
+            if(!greenSet){
+              state = userInputComplete;
+            }
+            else{
+              state = GreenSolid;
+              TempTime = 0;
+            }
             break;
           } 
           else if(checkKey == 'B'){
             state = GreenIN;
             break;
           }
+          
         }
 
+        TIMSK1 |= (1 << OCIE1A);
+        break;
+      
+      case userInputComplete:
+        TIMSK1 &= ~(1 << OCIE1A);
+        arrivedAtCompleted = true;
+        Serial.println("Waiting for '*' to continue");
+        while(true){
+          char checkKey = keypad.getKey();
+          if(checkKey == '*'){
+            state = RedSolid;
+            greenSet = true;
+            redSet = true;
+            break;
+          }
+          else if(checkKey == 'A'){
+            state = RedIN;
+            break;
+          }
+          else if(checkKey == 'B'){
+            state = GreenIN;
+            break;
+          }
+        
+        }
         TIMSK1 |= (1 << OCIE1A);
         break;
 
@@ -237,19 +280,21 @@ void loop() {
           timer1_compa_enable = false;
           TIMSK1 &= ~(1 << OCIE1A);  //Disables 1 sec timer so that it doesnt interrupt half second timer
           TIMSK1 |= (1 << OCIE1B);  //Enables 0.5 sec timer so that the 0.5 sec light blink can run
-          Serial.println("disabled OCIEA enabled OCIEB");
-          Serial.println(OCR1B);
         }
         break;
 
       case GreenSolid:
-        TempTime++;
         digitalWrite(greenLED, HIGH);
-        digitalWrite(buzzerPin, HIGH);
+        TempTime++;
+        Serial.println("Counting Green");
+        
         if(TempTime == (greenTime - 3)){
+          Serial.println("Transitioning to blinking");
+          digitalWrite(buzzerPin, HIGH);
           TempTime = 0;
           chosenPin = greenLED;
 
+          timer1_compa_enable = false;
           TIMSK1 &= ~(1 << OCIE1A);  //Disables 1 sec timer so that it doesnt interrupt half second timer
           TIMSK1 |= (1 << OCIE1B);  //Enables 0.5 sec timer so that the 0.5 sec light blink can run
         }
@@ -257,8 +302,9 @@ void loop() {
 
       case YellowBuzz:
         digitalWrite(yellowLED, HIGH);
-        digitalWrite(buzzerPin, HIGH);
+        digitalWrite(buzzerPin, LOW);
         chosenPin = yellowLED;
+        TempTime = 0;
 
         TIMSK1 &= ~(1 << OCIE1A);  //Disables 1 sec timer so that it doesnt interrupt half second timer
         TIMSK1 |= (1 << OCIE1B);  //Enables 0.5 sec timer so that the 0.5 sec light blink can run
@@ -270,14 +316,27 @@ void loop() {
   if(timer1_compb_enable){
     timer1_compb_enable = false; 
     Serial.println("Entered second timer");
-    if(TempTime != 6){
-      if(!FlickerFlag){
-        digitalWrite(chosenPin, LOW);
-      }
-      else if(FlickerFlag){
-        digitalWrite(chosenPin, HIGH);
-      }
+    OCR1A = 7812;  //sets timer time to be 0.5s so that the blinking will operate as intended
 
+    if(TempTime != 6){
+      if(chosenPin != yellowLED){
+        if(!FlickerFlag){
+          digitalWrite(chosenPin, LOW);
+          digitalWrite(buzzerPin, LOW);
+        }
+        else if(FlickerFlag){
+          digitalWrite(chosenPin, HIGH);
+          digitalWrite(buzzerPin, HIGH);
+        }
+      }
+      else{
+        if(!FlickerFlag){
+          digitalWrite(buzzerPin, LOW);
+        }
+        else if(FlickerFlag){
+          digitalWrite(buzzerPin, HIGH);
+        }
+      }
       FlickerFlag = !FlickerFlag;
       TempTime++;
       Serial.println("Second Counter");
@@ -299,6 +358,8 @@ void loop() {
         state = RedSolid;
       }
 
+
+      OCR1A = 15624;              //resets the timer interrupt to 1s so that the rest of the code may operate normally
       TIMSK1 &= ~(1 << OCIE1B);  //Disables 0.5 sec timer so that it doesnt interrupt one second timer
       TIMSK1 |= (1 << OCIE1A);  //Enables 1 sec timer so that the main state machine returns
     }
