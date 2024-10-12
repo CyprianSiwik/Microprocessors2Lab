@@ -52,7 +52,7 @@ const int greenOn = 10;
 const int yellowOn = 3;
 
 enum{Initial, RedIN, GreenIN, userInputComplete, RedSolid, RedFlickBuzz, GreenSolid, GreenFlickBuzz, YellowBuzz};
-unsigned char state = Initial; 
+unsigned char state; 
 unsigned char key;
 
 unsigned int redTime;
@@ -152,26 +152,12 @@ void loop() {
     digitalWrite(yellowLED, LOW);
     digitalWrite(buzzerPin, LOW);
   }
+
   
   if(timer1_compa_enable) {
     timer1_compa_enable = false;
 
     switch(state){
-      case Initial:
-        if (toggle1){
-          digitalWrite(redLED,HIGH);
-          toggle1 = 0;
-          Serial.println("ON");
-        }
-        else{
-          digitalWrite(redLED,LOW);
-          toggle1 = 1;
-          state = RedIN;
-          Serial.println("OFF");
-          Serial.println("completed Initial");
-        }
-        
-        break;
 
       case RedIN:
 
@@ -309,6 +295,20 @@ void loop() {
         TIMSK1 &= ~(1 << OCIE1A);  //Disables 1 sec timer so that it doesnt interrupt half second timer
         TIMSK1 |= (1 << OCIE1B);  //Enables 0.5 sec timer so that the 0.5 sec light blink can run
 
+        break;
+
+      default:
+        if (toggle1){
+          digitalWrite(redLED,HIGH);
+          toggle1 = 0;
+          Serial.println("ON");
+        }
+        else{
+          digitalWrite(redLED,LOW);
+          toggle1 = 1;
+          Serial.println("OFF");
+          Serial.println("completed Initial round");
+        }
         break;
     }
   }
