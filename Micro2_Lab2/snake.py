@@ -12,7 +12,7 @@ import serial
 
 # Note the serial port dev file name
 # need to change based on the particular host machine
-serialDevFile = 'COM8'  # Update to the Arduino's COM port
+serialDevFile = 'COM3'  # Update to the Arduino's COM port
 ser = serial.Serial(serialDevFile, 9600, timeout=0.1)
 
 delay = 0.1
@@ -103,6 +103,8 @@ wn.onkey(go_right, "d")
 while True:
     wn.update()
 
+    
+
     # Read control information from Arduino via serial
     if ser.in_waiting > 0:
         control_information = ser.readline().decode('utf-8').strip()
@@ -143,8 +145,8 @@ while True:
         ser.write(b'b')  # 'b' for beep
 
         # Move the food to a random spot
-        x = random.randint(-290, 290)
-        y = random.randint(-290, 290)
+        x = random.randint(-260, 260)
+        y = random.randint(-260, 260)
         food.goto(x, y)
 
         # Add a segment to the snake
