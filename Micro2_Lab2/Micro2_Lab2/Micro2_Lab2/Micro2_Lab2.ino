@@ -12,7 +12,13 @@ int16_t ax, ay, az;
 int16_t gx, gy, gz;
 
 int led_status = HIGH;
-int lastTime = 0;
+int lastTimeJoy = 0;
+int lastTimeGyro = 0;
+
+float GyroXError = 0;
+float GyroYError = 0;
+
+const int MPU = 0x68; // MPU6050 I2C address
 
 char readJoyStick(int xAxis, int yAxis){
   char command_to_return = 0;
@@ -32,21 +38,67 @@ char readJoyStick(int xAxis, int yAxis){
   return command_to_return; 
 }
 
+void GyroErrorCalc(){
+  int c = 0;
+
+  float GyroX, GyroY;
+  float GyroErrorX, GyroErrorY;
+  
+  while(c <= 200){
+    Wire.beginTransmission(MPU);
+    Wire.write(0x43);
+    Wire.endTransmission(false);
+    Wire.requestFrom(MPU, 6, true);
+
+    GyroX = Wire.read() << 8 | Wire.read();
+    GyroY = Wire.read() << 8 | Wire.read();
+
+    GyroErrorX = GyroErrorX + (GyroX / 131.0);
+    GyroErrorY = GyroErrorY + (GyroY / 131.0);
+    c++;
+  }
+
+  GyroXError = GyroErrorX / 200;
+  GyroYError = GyroErrorY / 200;
+
+}
+
 char readGyro(){
+
+  float GyroX = 0;
+  float GyroY = 0;
+  char command = 0;
+
   Wire.beginTransmission(MPU);
   Wire.write(0x43); // Gyro data first register address 0x43
   Wire.endTransmission(false);
   Wire.requestFrom(MPU, 6, true); // Read 4 registers total, each axis value is stored in 2 registers
   GyroX = (Wire.read() << 8 | Wire.read()) / 131.0; // For a 250deg/s range we have to divide first the raw value by 131.0, according to the datasheet
   GyroY = (Wire.read() << 8 | Wire.read()) / 131.0;
-  GyroZ = (Wire.read() << 8 | Wire.read()) / 131.0;
+
   // Correct the outputs with the calculated error values
-  GyroX = GyroX + 0.56; // GyroErrorX ~(-0.56)
-  GyroY = GyroY - 2; // GyroErrorY ~(2)
-  GyroZ = GyroZ + 0.79; // GyroErrorZ ~ (-0.8)
+  GyroX += GyroXError; 
+  GyroY += GyroYError; 
+
+
+  if(GyroX >= 30){
+    command = 'd';
+  }
+  else if(GyroY >= 30){
+    command = 'w';
+  }
+  else if(GyroX <= -60){
+    command = 'a';
+  }
+  else if(GyroY <= -60){
+    command = 's';
+  }
+  else{
+    command = 0;
+  }
+
+  return command;
 }
-
-
 
 void setup() {
   Serial.begin(9600);
@@ -63,12 +115,9 @@ void setup() {
   Wire.write(0x6B);                  // Talk to the register 6B
   Wire.write(0x00);                  // Make reset - place a 0 into the 6B register
   Wire.endTransmission(true);        //end the transmission
-/*
-  Wire.begin();
-  mpu.initialize();
-  if (!mpu.testConnection()) {
-    while (1);
-*/
+
+  GyroErrorCalc();
+  
 }
 void loop() {
   // Handle sensor readings in the main loop
@@ -89,13 +138,19 @@ void loop() {
   int xAxis = analogRead(xPin);
   int yAxis = analogRead(yPin);
 
-  char input = readJoyStick(xAxis, yAxis);
+  char inputJoy = readJoyStick(xAxis, yAxis);
+  char inputGyro = readGyro();
 
   int Time = millis();
-  if((input != 0) && ((Time - lastTime) >= 1000)){
-    Serial.println(input);
-    input = 0;
-    lastTime = Time;
+  if((inputJoy != 0) && ((Time - lastTimeJoy) >= 500)){
+    Serial.println(inputJoy);
+    inputJoy = 0;
+    lastTimeJoy = Time;
+  }
+  if((inputGyro != 0) && ((Time - lastTimeGyro) >= 500)){
+    Serial.println(inputGyro);
+    inputGyro = 0;
+    lastTimeGyro = Time;
   }
 
 }
