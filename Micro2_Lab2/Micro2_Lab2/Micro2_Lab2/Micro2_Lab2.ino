@@ -87,10 +87,10 @@ char readGyro(){
   else if(GyroY >= 30){
     command = 'w';
   }
-  else if(GyroX <= -60){
+  else if(GyroX <= -80){
     command = 'a';
   }
-  else if(GyroY <= -60){
+  else if(GyroY <= -80){
     command = 's';
   }
   else{
