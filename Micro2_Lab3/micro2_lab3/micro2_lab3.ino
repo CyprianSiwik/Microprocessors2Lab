@@ -42,6 +42,11 @@ const int rs = 12, E = 11, d4 = 4, d5 = 5, d6 = 6, d7 = 7;
 LiquidCrystal lcd(rs, E, d4, d5, d6, d7);
 RTC_DS1307 rtc;
 
+
+
+
+
+
 void setup(){
   Serial.begin(9600);
   pinMode(speedPin, OUTPUT);
@@ -50,9 +55,8 @@ void setup(){
   pinMode(A1, INPUT);
 
   lcd.begin(16,2);
-  lcd.clear();
   lcd.print("Hello World");
-
+  lcd.clear();
 
   if (! rtc.begin()) {
     Serial.println("Couldn't find RTC");
@@ -89,13 +93,9 @@ ISR(TIMER1_COMPA_vect){
   motorDirectUpdate = false;
 }
 
-
 void loop(){
-  
-  if(rtcUpdate){
   DateTime now = rtc.now();
-
-  lcd.clear();
+  if(rtcUpdate){
   lcd.setCursor(0,0);
   lcd.print(String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()));
 
@@ -143,7 +143,7 @@ void loop(){
   FFT.complexToMagnitude();
 
   float x = FFT.majorPeak();
-  //Serial.println(x);
+  Serial.println(x);
   
   if(x <= 267 && x >= 257 && !motorUpdate){
     if(motorVal < 4){
@@ -160,9 +160,9 @@ void loop(){
     motorUpdate = true;
   }
   motorSpeed = map(motorVal, 0, 4, 0, 255);
-  analogWrite(speedPin, motorSpeed);
-  Serial.println(motorSpeed);
 
+
+  //Serial.println(motorSpeed);
 
 
   if (digitalRead(buttonPin) == 1 && !motorDirectUpdate){
@@ -174,14 +174,38 @@ void loop(){
   if(motorDirect){
     digitalWrite(forwardPin, HIGH);
     digitalWrite(backPin, LOW);
-    lcd.setCursor(0, 1);
-    lcd.print("Dir: C;Speed: " + String(motorVal));
+
+    if(now.second() == 0){
+      analogWrite(speedPin, motorSpeed);
+      lcd.clear();
+      lcd.setCursor(0, 1);
+      lcd.print("Dir: C;Speed: " + String(motorVal));
+      rtcUpdate = true;
+    }
+    else if(now.second() == 30){
+      analogWrite(speedPin, LOW);
+      lcd.clear();
+      rtcUpdate = true;
+    }
   }
   else if(!motorDirect){
     digitalWrite(forwardPin, LOW);
     digitalWrite(backPin, HIGH);
-    lcd.setCursor(0, 1);
-    lcd.print("Dir: CC;Speed: " + String(motorVal));
+
+    if(now.second() == 0){
+      analogWrite(speedPin, motorSpeed); 
+      lcd.clear();
+      lcd.setCursor(0, 1);
+      lcd.print("Dir: CC;Speed: " + String(motorVal));
+      rtcUpdate = true;
+    }
+    else if(now.second() == 30){
+      analogWrite(speedPin, LOW);
+      lcd.clear();
+      rtcUpdate = true;
+    }
   } 
+
+
 
 }
