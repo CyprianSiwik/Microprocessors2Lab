@@ -22,12 +22,15 @@ int val = 0;
 int minVal = 1024;
 int maxVal = 0;
 
+int seconds, minutes, hours;
+
 ArduinoFFT<float> FFT = ArduinoFFT<float>(vReal, vImag, samples, samplingFrequency, true);
 
 bool rtcUpdate = false;
 bool motorUpdate = false;
 bool motorDirect = false;
 bool motorDirectUpdate = false;
+bool motorON = false;
 
 int motorVal = 1;
 int motorSpeed = 0;
@@ -64,6 +67,10 @@ void setup(){
   }
 
   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  DateTime now = rtc.now();
+  seconds = now.second();
+  minutes = now.minute();
+  hours = now.hour();
 
   sampling_period_us = round(1000000*(1.0/samplingFrequency));
 
@@ -93,14 +100,56 @@ ISR(TIMER1_COMPA_vect){
   motorDirectUpdate = false;
 }
 
-void loop(){
-  DateTime now = rtc.now();
-  if(rtcUpdate){
-  lcd.setCursor(0,0);
-  lcd.print(String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()));
+int update_second(int seconds, int minutes, int hours){
+  //Serial.println("Seconds Updated");
+  if(seconds == 59){
+    seconds = 0;
+  }
+  else{
+    seconds++;
+  }
+  return seconds;
+}
+int update_minute(int minutes){
+  //Serial.println("Minutes Updated");
 
-  //Serial.println("up");
-  rtcUpdate = false;
+  if(minutes == 59){
+    minutes = 0;
+  }
+  else{
+    minutes++;
+  }
+  return minutes;
+}
+int update_hour(int hours){
+  //Serial.println("Hours Updated");
+  if (hours == 23){
+    hours = 0;
+  }
+  else{
+    hours++;
+  }
+  return hours; 
+}
+
+void loop(){
+
+  if(rtcUpdate){
+    lcd.setCursor(0,0);
+    seconds = update_second(seconds, minutes, hours);
+
+    if(seconds == 0){
+      minutes = update_minute(minutes);
+
+      if(minutes == 0){
+        hours = update_hour(hours);
+      }
+    }
+    lcd.print(String(hours) + ":" + String(minutes) + ":" + String(seconds));
+    //lcd.print(String(now.hour()) + ":" + String(now.minute()) + ":" + String(now.second()));
+
+    //Serial.println("up");
+    rtcUpdate = false;
   }
 
   microseconds = micros();
@@ -143,7 +192,7 @@ void loop(){
   FFT.complexToMagnitude();
 
   float x = FFT.majorPeak();
-  Serial.println(x);
+  //Serial.println(x);
   
   if(x <= 267 && x >= 257 && !motorUpdate){
     if(motorVal < 4){
@@ -169,40 +218,59 @@ void loop(){
     motorDirect = !motorDirect;
     motorDirectUpdate = true;
     Serial.println("Toggled Fan");
+
+    if(motorON){
+      if(motorDirect){
+        
+        lcd.clear();
+        lcd.setCursor(0, 1);
+        lcd.print("Dir:CC;Speed: " + String(motorVal));
+      }
+      else if(!motorDirect){
+        
+        lcd.clear();
+        lcd.setCursor(0, 1);
+        lcd.print("Dir:CCW;Speed: " + String(motorVal));
+      }
+    }
   }
 
   if(motorDirect){
     digitalWrite(forwardPin, HIGH);
     digitalWrite(backPin, LOW);
 
-    if(now.second() == 0){
+    if(seconds == 0){
       analogWrite(speedPin, motorSpeed);
       lcd.clear();
       lcd.setCursor(0, 1);
-      lcd.print("Dir: C;Speed: " + String(motorVal));
+      lcd.print("Dir:CC;Speed: " + String(motorVal));
       rtcUpdate = true;
+      motorON = true;
     }
-    else if(now.second() == 30){
+    else if(seconds == 30){
       analogWrite(speedPin, LOW);
       lcd.clear();
       rtcUpdate = true;
+      motorON = false;
     }
   }
   else if(!motorDirect){
     digitalWrite(forwardPin, LOW);
     digitalWrite(backPin, HIGH);
 
-    if(now.second() == 0){
+    if(seconds == 0){
       analogWrite(speedPin, motorSpeed); 
       lcd.clear();
       lcd.setCursor(0, 1);
-      lcd.print("Dir: CC;Speed: " + String(motorVal));
+      lcd.print("Dir:CCW;Speed: " + String(motorVal));
       rtcUpdate = true;
+      motorON = true;
     }
-    else if(now.second() == 30){
+    else if(seconds == 30){
       analogWrite(speedPin, LOW);
       lcd.clear();
       rtcUpdate = true;
+      motorON = false; 
     }
   } 
 
